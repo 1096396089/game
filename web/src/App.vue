@@ -9,33 +9,44 @@
         <button @click="showProfile = !showProfile" class="px-3 py-1 rounded bg-white/70 backdrop-blur-md shadow hover:bg-white">信息</button>
       </div>
 
-      <!-- Slide panels -->
-      <transition name="slide-left" appear>
-        <TaskPanel v-if="showTask" :tasks="tasks" />
-      </transition>
-
+      <!-- 仅放置地图，占满主区域 -->
       <MapCanvas />
-
-      <transition name="slide-right" appear>
-        <InventoryPanel v-if="showInventory" :items="items" />
-      </transition>
-
-      <transition name="slide-right" appear>
-        <ProfilePanel v-if="showProfile" />
-      </transition>
     </div>
 
-    <DialogueFooter :dialogue="currentDialogue" />
+    <!-- Element Plus Dialogs -->
+    <el-dialog v-model="showTask" title="任务" width="400px" destroy-on-close>
+      <div class="space-y-3">
+        <div v-for="task in tasks" :key="task.id" class="border p-3 rounded">
+          <h3 class="font-semibold text-lg">{{ task.title }}</h3>
+          <p class="text-sm mt-1">{{ task.desc }}</p>
+        </div>
+      </div>
+    </el-dialog>
+
+    <el-dialog v-model="showInventory" title="道具" width="400px" destroy-on-close>
+      <ul class="grid grid-cols-3 gap-4">
+        <li v-for="item in items" :key="item.id" class="flex flex-col items-center">
+          <img :src="item.icon" :alt="item.name" class="w-12 h-12 mb-1" />
+          <span class="text-sm">{{ item.name }}</span>
+        </li>
+      </ul>
+    </el-dialog>
+
+    <el-dialog v-model="showProfile" title="个人信息" width="400px" destroy-on-close>
+      <div class="space-y-2 text-sm">
+        <p><strong>姓名：</strong> 少侠</p>
+        <p><strong>门派：</strong> 华山派</p>
+        <p><strong>等级：</strong> 15</p>
+        <p><strong>声望：</strong> 侠名远扬</p>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
-import TaskPanel from './components/TaskPanel.vue'
-import InventoryPanel from './components/InventoryPanel.vue'
 import MapCanvas from './components/MapCanvas.vue'
 import DialogueFooter from './components/DialogueFooter.vue'
-import ProfilePanel from './components/ProfilePanel.vue'
 
 /* 模拟任务数据 */
 const tasks = ref([

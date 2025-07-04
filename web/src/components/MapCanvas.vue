@@ -20,10 +20,9 @@
         <!-- 地图底图 -->
         <img
           ref="imgRef"
-          src="../assets/map.png"
+          src="../assets/map1.png"
           alt="世界地图占位图"
-          class="block select-none pointer-events-none"
-          style="width: 1024px; height: 1024px; object-fit: cover;"
+          class="block select-none pointer-events-none w-full h-full"
         />
 
         <!-- 交互锚点 -->
@@ -63,8 +62,8 @@ const wrapper = ref<HTMLDivElement | null>(null)
 const scale = ref(1)
 const imgRef = ref<HTMLImageElement | null>(null)
 
-const MIN_SCALE = 0.5
 const MAX_SCALE = 3
+const minScale = ref(0.5)
 
 // 拖拽平移逻辑
 const dragging = ref(false)
@@ -72,6 +71,15 @@ let startX = 0
 let startY = 0
 let startScrollLeft = 0
 let startScrollTop = 0
+
+function clampScroll() {
+  if (!container.value) return
+  const el = container.value
+  const maxX = el.scrollWidth - el.clientWidth
+  const maxY = el.scrollHeight - el.clientHeight
+  el.scrollLeft = Math.min(Math.max(0, el.scrollLeft), maxX)
+  el.scrollTop = Math.min(Math.max(0, el.scrollTop), maxY)
+}
 
 function onDragStart(e: MouseEvent) {
   if (!container.value || e.button !== 0) return
@@ -93,6 +101,7 @@ function onDrag(e: MouseEvent) {
   const dy = e.clientY - startY
   container.value.scrollLeft = startScrollLeft - dx
   container.value.scrollTop = startScrollTop - dy
+  clampScroll()
 }
 
 function onDragEnd() {
@@ -105,7 +114,7 @@ function onWheel(e: WheelEvent) {
   e.preventDefault()
   const delta = -e.deltaY
   const zoomFactor = delta > 0 ? 1.1 : 0.9
-  const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale.value * zoomFactor))
+  const newScale = Math.min(MAX_SCALE, Math.max(minScale.value, scale.value * zoomFactor))
 
   // 计算缩放中心，让鼠标位置保持相对地图一致
   if (imgRef.value && container.value) {
@@ -127,8 +136,18 @@ function onWheel(e: WheelEvent) {
       const dy = (newRect.height - prevHeight) * percentY
       container.value!.scrollLeft += dx
       container.value!.scrollTop += dy
+      clampScroll()
     })
   }
+}
+
+function updateMinScale() {
+  if (!container.value) return
+  const el = container.value
+  const wRatio = el.clientWidth / 2560 // original width
+  const hRatio = el.clientHeight / 1440 // original height
+  minScale.value = Math.max(wRatio, hRatio, 0.2) // ensure at least 0.2
+  if (scale.value < minScale.value) scale.value = minScale.value
 }
 
 // 锚点示例数据 (百分比坐标)
@@ -150,16 +169,21 @@ function onMarkerClick(m: Marker) {
 }
 
 const wrapperStyle = computed(() => ({
-  transform: `scale(${scale.value})`,
-  transformOrigin: 'top left',
+  width: `${2560 * scale.value}px`,
+  height: `${1440 * scale.value}px`,
 }))
 
 onMounted(() => {
   if (container.value) {
+    updateMinScale()
     // 初始居中显示地图
     const el = container.value
     el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2
     el.scrollTop = (el.scrollHeight - el.clientHeight) / 2
+
+    // 监听窗口尺寸变化，调整最小缩放
+    const resizeObserver = new ResizeObserver(() => updateMinScale())
+    resizeObserver.observe(el)
   }
 })
 </script>
